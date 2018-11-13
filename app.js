@@ -9,8 +9,8 @@ io.on('connection', socket => {
   })
   socket.on('message', message => {
     console.log('message received : ', message);
-    socket.emit('message', "moi : "+message);
-    socket.broadcast.emit('message', socket.id + ":" + message);
+    socket.emit('message', {isMe: true, message, socketId:socket.id});
+    socket.broadcast.emit('message', {isMe: false, message, socketId:socket.id});
   })
 })
 

@@ -1,29 +1,247 @@
-Hello World
-
-<div id="messageDiv">
-
-</div>
-
-<input type="text" id="messageInput"/>
-<button id="submitBtn">ENVOYER</button>
-
-<script src="/socket.io/socket.io.js"></script>
-<script>
-  var socket = io();
-
-  var messageDiv = document.getElementById('messageDiv');
-  var submitBtn = document.getElementById('submitBtn');
-  var messageInput = document.getElementById('messageInput');
+<!doctype html>
+<style>
+    @import url('https://fonts.googleapis.com/css?family=Quicksand');
   
-  submitBtn.addEventListener('click', () => {
-    socket.emit('message', messageInput.value)
-    messageInput.value = '';
-  })
+    html, body{
+        /* width:100%;
+        min-height:100%;
+        max-height:100%; */
+        margin:0;
+        padding:0;
+        position:fixed;
+        top:0;
+        bottom:0;
+        left:0;
+        right:0;
+        display:flex;
+    }
+  
+    * {
+        font-family: "Quicksand";
+        box-sizing: border-box;
+        min-height:0;
+    }
+  
+    h1, h2, h3, h4, h5, p{
+      margin:0;
+      font-weight:normal;
+    }
+  
+    /*-------------------------------------------------*/
+    /*--------------------   MAIN    ------------------*/
+    /*-------------------------------------------------*/
+  
+    #index-body{
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+  
+    header{
+      width:100%;
+      background-color:#C5B7FF;
+      padding:20px;
+      /* height:80px; */
+      display:flex;
+    }
+  
+    header>h1{
+      font-size:20px;
+      color:white;
+    }
+  
+    #content{
+      display: flex;
+      flex-direction: row;
+      flex-grow:1;
+      width:100%;
+    }
+  
+    #main-section{
+      display: flex;
+      flex-grow: 1;
+    }
+  
+    /*-------------------------------------------------*/
+    /*---------------   MESSAGES SECTION    -----------*/
+    /*-------------------------------------------------*/
+  
+    /*---------------   Messages styles    -----------*/
+  
+  
+    #messages-section{
+      width:400px;
+      background-color:#F8F6FF;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+  
+    #messages-container{
+      display: flex;
+      flex-direction:column;
+      padding:10px;
+    }
+  
+    .message{
+      display:flex;
+      flex-direction: column;
+      margin-bottom:20px;
+    }
+  
+    .message .message-author{
+      font-size:12px;
+      color:#959595;
+      margin-bottom: 3px;
+    }
+  
+    .message .message-body{
+      max-width:250px;
+      min-width:100px;
+      font-size:13px;
+      color:#959595;
+      padding:10px;
+    }
+  
+    .message-me .message-body{
+      border-radius: 8px 8px 8px 0;
+      background-color: #C5B7FF;
+      color:white;
+    }
+  
+    .message-other{
+      align-self: flex-end;
+      align-items: flex-end;
+    }
+  
+    .message-other .message-body{
+      border-radius: 8px 8px 0 8px;
+      background-color: #F3F1FC;
+      max-width:250px;
+    }
+  
+    /*---------------   Send message part    -----------*/
+  
+    #message-sender{
+      display:flex;
+      flex-direction:row;
+      border-radius:8px;
+      background-color:white;
+      /* border:solid #CCCCCC 1px; */
+      /* width:100%; */
+      margin:10px;
+      overflow: hidden;
+      align-items: flex-end;
+      min-height: 60px;
+    }
+  
+    #message-sender textarea{
+      font-size:13px;
+      color:#959595;
+      border:none;
+      height:100%;
+      width:300px;
+    }
+  
+    #send-message-button{
+      background-color:transparent;
+      font-size:13px;
+      color:#C5B7FF;
+      font-weight:normal;
+      text-transform: uppercase;
+      border:none;
+      border-radius:6;
+      height:20px;
+    }
+    #send-message-button:hover{
+      font-weight:bold;
+      cursor:pointer;
+    }
+  
+  </style>
 
-  socket.on('message', message => {
-    console.log('message received : ', message);
-    messageDiv.innerHTML += '<p>'+message+'</p>';
-  })
+  <html lang="fr">
 
-  socket.emit('loaded', 'page loaded !!!');
-</script>
+    <head>
+      <meta charset="utf-8">
+      <title>Morpion Online</title>
+      <!-- <link rel="stylesheet" type="text/css" href="../css/main.css"> -->
+    </head>
+
+    <body id="index-body">
+
+      <!-- Header -->
+      <header>
+        <h1>Morpion Online</h1>
+      </header>
+
+      <!-- All page -->
+      <div id="content">
+
+        <!-- Place for action like connect to one user, morpion game ... -->
+        <section id="main-section">
+
+        </section>
+
+        <!-- tchat panel -->
+        <section id="messages-section">
+
+          <!-- All messages -->
+          <div id="messages-container">
+            <!-- Some content will be append here -->
+          </div>
+
+          <!-- Block with input to send message -->
+          <div id="message-sender">
+            <textarea id="message-textarea"></textarea>
+            <button id="send-message-button" type="button">envoyer</button>
+          </div>
+
+        </section>
+
+      </div>
+      
+      <script src="/socket.io/socket.io.js"></script>
+      <script>
+        var socket = io();
+      
+        var messageContainer = document.getElementById('messages-container');
+        var sendMessageButton = document.getElementById('send-message-button');
+        var messageTextArea = document.getElementById('message-textarea');
+        
+        sendMessageButton.addEventListener('click', () => {
+          socket.emit('message', messageTextArea.value)
+          messageTextArea.value = '';
+        })
+      
+        socket.on('message', data => {
+          console.log('message received : ', data);
+          messageContainer.appendChild(createMessage(data.isMe, data.message, data.socketId));
+        })
+      
+        socket.emit('loaded', 'page loaded !!!');
+
+        function createMessage(isMe, message, socketId){
+          let messageBlock = document.createElement("div");
+          messageBlock.classList.add("message");
+
+          isMe ? messageBlock.classList.add("message-me") : messageBlock.classList.add("message-other");
+
+          let messageAuhtor = document.createElement("p");
+          messageAuhtor.classList.add("message-author");
+          messageAuhtor.innerText = isMe ? "Me" : socketId;
+
+          let messageBody = document.createElement("p");
+          messageBody.classList.add("message-body");
+          messageBody.innerText = message;
+
+          messageBlock.appendChild(messageAuhtor);
+          messageBlock.appendChild(messageBody);
+
+          return messageBlock;
+        }
+      </script>
+    </body>
+</html>
+
