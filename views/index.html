@@ -44,6 +44,9 @@
       padding:20px;
       /* height:80px; */
       display:flex;
+      flex-grow: 0;
+      flex-shrink: 0;
+      flex-basis: auto;
     }
   
     header>h1{
@@ -62,6 +65,13 @@
       display: flex;
       flex-grow: 1;
     }
+
+    .right-menu{
+      width:400px;
+      background-color:#F8F6FF;
+      display: flex;
+      flex-direction: column;
+    }
   
     /*-------------------------------------------------*/
     /*---------------   MESSAGES SECTION    -----------*/
@@ -71,10 +81,6 @@
   
   
     #messages-section{
-      width:400px;
-      background-color:#F8F6FF;
-      display: flex;
-      flex-direction: column;
       justify-content: space-between;
     }
   
@@ -82,12 +88,17 @@
       display: flex;
       flex-direction:column;
       padding:10px;
+      overflow-y: scroll;
+      flex-grow:1;
     }
   
     .message{
       display:flex;
       flex-direction: column;
       margin-bottom:20px;
+      flex-grow: 0;
+      flex-shrink: 0;
+      flex-basis: auto;
     }
   
     .message .message-author{
@@ -158,7 +169,85 @@
       font-weight:bold;
       cursor:pointer;
     }
-  
+
+    /*----------------- Title  -----------------*/
+
+    #conversation-title-block{
+      display: flex;
+      flex-direction: row;
+      padding:20px 10px 10px 10px;
+      align-items:center;
+      /* justify-content: space-between; */
+    }
+
+    #conversation-title{
+      font-size:22px;
+      margin-right:20px;
+      
+    }
+
+    #message-return-button{
+      background-color:#F3F1FC;
+      font-size:13px;
+      color:#C5B7FF;
+      font-weight:normal;
+      text-transform: uppercase;
+      border:none;
+      border-radius:8px;
+      height:30px;
+      min-width:100px;
+      /* margin:10px; */
+    }
+
+     #message-return-button:hover{
+      background-color:#EBE6FF;
+      cursor:pointer;
+     }
+
+    /*-------------------------------------------------*/
+    /*--------------   USER LIST SECTION    -----------*/
+    /*-------------------------------------------------*/
+
+    #user-list-section{
+      padding:10px;
+    }
+
+    #user-list-section>h2{
+      font-size:22px;
+      margin-bottom:20px;
+      margin-top:10px;
+    }
+
+    #user-list{
+      
+    }
+
+    #user-list hr{
+      width:80%;
+      margin-top:20px;
+      margin-bottom: 20px;
+    }
+
+    .user-item{
+      padding:20px;
+      border-radius:8px;
+      background-color: #F3F1FC;
+      color:#959595;
+      margin-bottom:10px;
+    }
+
+    .user-item:hover{
+      background-color:#EBE6FF;
+      cursor:pointer;
+    }
+
+    /*------------------------------------------------*/
+    /*---------- GLOBAL CLASS (HIGH PRIORITY) --------*/
+    /*------------------------------------------------*/
+
+    .hidden{
+      display:none;
+    }
   </style>
 
   <html lang="fr">
@@ -185,7 +274,15 @@
         </section>
 
         <!-- tchat panel -->
-        <section id="messages-section">
+        <section id="messages-section" class="right-menu hidden">
+
+          <!-- conversation's title-->
+          <div id="conversation-title-block">
+            <p id="conversation-title">Une discussion ...</p>
+            <!-- return button -->
+            <button id="message-return-button" type="button">Retour</button>
+          </div>
+          
 
           <!-- All messages -->
           <div id="messages-container">
@@ -197,7 +294,15 @@
             <textarea id="message-textarea"></textarea>
             <button id="send-message-button" type="button">envoyer</button>
           </div>
+        </section>
 
+        <!-- connected user list -->
+        <section id="user-list-section" class="right-menu">
+          <h2>Discussion</h2>
+          <div id="user-list">
+            <div id="global-message-channel-button" class="user-item"><p>Global channel</p></div>
+            <hr>
+          </div>
         </section>
 
       </div>
@@ -205,22 +310,59 @@
       <script src="/socket.io/socket.io.js"></script>
       <script>
         var socket = io();
+
+        socket.emit('loaded', 'page loaded !!!');
       
         var messageContainer = document.getElementById('messages-container');
         var sendMessageButton = document.getElementById('send-message-button');
         var messageTextArea = document.getElementById('message-textarea');
-        
+        let messageReturnButton = document.getElementById('message-return-button');
+        let conversationTitle = document.getElementById('conversation-title');
+
+        let globalMessageChannelButton = document.getElementById("global-message-channel-button");
+        let messagesSection = document.getElementById("messages-section");
+        let userListSection = document.getElementById("user-list-section");
+
+
+        /*---------------------- MESSAGES ------------------------*/
+
+
+        // sending message in channel
         sendMessageButton.addEventListener('click', () => {
           socket.emit('message', messageTextArea.value)
           messageTextArea.value = '';
         })
       
+        // receive message by socket
         socket.on('message', data => {
           console.log('message received : ', data);
           messageContainer.appendChild(createMessage(data.isMe, data.message, data.socketId));
+        })        
+
+        // Global channel button
+
+        globalMessageChannelButton.addEventListener('click', () => {
+          userListSection.classList.add("hidden");
+          messagesSection.classList.remove("hidden");
+          conversationTitle.innerText="Global Channel"
         })
-      
-        socket.emit('loaded', 'page loaded !!!');
+
+        // on click on user
+
+
+
+        // Return button
+
+        messageReturnButton.addEventListener('click', () => {
+          messagesSection.classList.add("hidden");
+          userListSection.classList.remove("hidden");
+        })
+
+        // user list
+
+        socket.on('clients', (data) => {
+          feedUserList(data);
+        })
 
         function createMessage(isMe, message, socketId){
           let messageBlock = document.createElement("div");
@@ -240,6 +382,36 @@
           messageBlock.appendChild(messageBody);
 
           return messageBlock;
+        }
+
+        function feedUserList(data){
+          let userList = document.getElementById('user-list');
+          data.clients.forEach(client => {
+            userList.appendChild(createUserItem(data.users[client]));
+          });
+        }
+
+        function createUserItem(user){
+          let userItem = document.createElement("div");
+          userItem.classList.add('user-item');
+          userItem.setAttribute("id", user.socketId);
+
+          userItem.addEventListener('click', () => {
+            launchConversation(user);
+          })
+
+          let userName = document.createElement("p");
+          userName.innerText = user.name;
+          userItem.appendChild(userName);
+
+          return userItem;
+        }
+
+        function launchConversation(user){
+          userListSection.classList.add("hidden");
+          messagesSection.classList.remove("hidden");
+          conversationTitle.innerText=user.name;
+          console.log(user);
         }
       </script>
     </body>
