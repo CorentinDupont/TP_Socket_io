@@ -219,13 +219,16 @@
     }
 
     #user-list{
-      
+      overflow-y:scroll;
     }
 
     #user-list hr{
       width:80%;
       margin-top:20px;
       margin-bottom: 20px;
+      flex-grow: 0;
+      flex-shrink: 0;
+      flex-basis: auto;
     }
 
     .user-item{
@@ -234,6 +237,9 @@
       background-color: #F3F1FC;
       color:#959595;
       margin-bottom:10px;
+      flex-grow: 0;
+      flex-shrink: 0;
+      flex-basis: auto;
     }
 
     .user-item:hover{
@@ -323,13 +329,20 @@
         let messagesSection = document.getElementById("messages-section");
         let userListSection = document.getElementById("user-list-section");
 
+        let selectedUser = null;
+
 
         /*---------------------- MESSAGES ------------------------*/
 
 
         // sending message in channel
         sendMessageButton.addEventListener('click', () => {
-          socket.emit('message', messageTextArea.value)
+          if(selectedUser){
+            socket.emit('private-message', {message: messageTextArea.value, socketId: selectedUser.socketId});
+          }else{
+            socket.emit('message', messageTextArea.value);
+          }
+          
           messageTextArea.value = '';
         })
       
@@ -347,15 +360,12 @@
           conversationTitle.innerText="Global Channel"
         })
 
-        // on click on user
-
-
-
         // Return button
 
         messageReturnButton.addEventListener('click', () => {
           messagesSection.classList.add("hidden");
           userListSection.classList.remove("hidden");
+          selectedUser=null;
         })
 
         // user list
@@ -394,7 +404,6 @@
         function createUserItem(user){
           let userItem = document.createElement("div");
           userItem.classList.add('user-item');
-          userItem.setAttribute("id", user.socketId);
 
           userItem.addEventListener('click', () => {
             launchConversation(user);
@@ -411,7 +420,8 @@
           userListSection.classList.add("hidden");
           messagesSection.classList.remove("hidden");
           conversationTitle.innerText=user.name;
-          console.log(user);
+          selectedUser = user;
+          console.log(selectedUser);
         }
       </script>
     </body>

@@ -32,6 +32,11 @@ io.on('connection', socket => {
     socket.broadcast.emit('message', {isMe: false, message, socketId:socket.id});
   })
 
+  socket.on('private-message', data => {
+    socket.emit('message', {isMe: true, message:data.message, socketId:socket.id});
+    io.to(data.socketId).emit('message', {isMe: false, message:data.message, socketId:socket.id});
+  })
+
 })
 
 
